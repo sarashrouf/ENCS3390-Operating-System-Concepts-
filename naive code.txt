@@ -1,0 +1,129 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_WORDS 17005207 // Corrected the macro
+#define MAX_WORD_LENGTH 100
+
+typedef struct {
+    char word[MAX_WORD_LENGTH];
+    int frequency;
+} Word;
+
+// Function to store all words in the array
+int store_word(Word *wordArray, int *size, const char *word) {
+    for (int i = 0; i < *size; i++) {
+        if (strcmp(wordArray[i].word, word) == 0) {
+            wordArray[i].frequency++;
+            return 1;
+        }
+    }
+
+    strcpy(wordArray[*size].word, word);
+    wordArray[*size].frequency = 1;
+    (*size)++;
+    return 1;
+}
+
+// Merge function
+void merge(Word *wordArray, int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    Word *L = (Word *)malloc(n1 * sizeof(Word));
+    Word *R = (Word *)malloc(n2 * sizeof(Word));
+
+    for (int i = 0; i < n1; i++)
+        L[i] = wordArray[left + i];
+    for (int j = 0; j < n2; j++)
+        R[j] = wordArray[mid + 1 + j];
+
+    int i = 0, j = 0, k = left;
+
+    while (i < n1 && j < n2) {
+        if (L[i].frequency >= R[j].frequency) {
+            wordArray[k] = L[i];
+            i++;
+        } else {
+            wordArray[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        wordArray[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        wordArray[k] = R[j];
+        j++;
+        k++;
+    }
+
+    free(L);
+    free(R);
+}
+
+// Merge Sort function
+void merge_sort(Word *wordArray, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        merge_sort(wordArray, left, mid);
+        merge_sort(wordArray, mid + 1, right);
+
+        merge(wordArray, left, mid, right);
+    }
+}
+
+// Function to read words from the file and store them in the word array
+int read_file(Word *wordArray, int *wordCount) {
+    FILE *data = fopen("text8.txt", "r");
+    if (data == NULL) {
+        printf("\nAn Error in opening 'text8.txt' file.\n");
+        printf("\nInput file name must be (text8.txt).\n");
+        return 1;
+    }
+
+    char buffer[MAX_WORD_LENGTH];
+    while (fscanf(data, "%s", buffer) != EOF) {
+        store_word(wordArray, wordCount, buffer);
+    }
+
+    fclose(data);
+    return 1;
+}
+
+int main() {
+    Word *wordArray = malloc(MAX_WORDS * sizeof(Word));
+    if (wordArray == NULL) {
+        printf("Memory allocation failed.\n");
+        return 1;
+    }
+
+    int wordCount = 0;
+
+    clock_t start = clock();
+
+    read_file(wordArray, &wordCount);
+
+    merge_sort(wordArray, 0, wordCount - 1);
+
+    clock_t end = clock();
+    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+    printf("Top 10 most frequent words:\n");
+    for (int i = 0; i < 10 && i < wordCount; i++) {
+        printf("%s: %d\n", wordArray[i].word, wordArray[i].frequency);
+    }
+
+    printf("\nExecution Time: %.2f seconds\n", time_taken);
+
+    free(wordArray);
+
+    return 0;
+}
